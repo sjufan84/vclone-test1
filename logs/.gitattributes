@@ -1,0 +1,2 @@
+added_IVF533_Flat_nprobe_1.index filter=lfs diff=lfs merge=lfs -text
+trained_IVF479_Flat_nprobe_1.index filter=lfs diff=lfs merge=lfs -text
