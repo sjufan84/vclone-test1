@@ -85,7 +85,7 @@ def init_chat_session_variables():
 init_chat_session_variables()
 
 # Establish the titlea
-st.title("Vocal Clone Demo v1")
+st.title("Vocal Cloning v1")
 
 global DoFormant, Quefrency, Timbre
 
@@ -443,9 +443,6 @@ def main_ui():
             # Create a temporary file to save the uploaded file
             tfile = tempfile.NamedTemporaryFile(delete=False) 
             tfile.write(audio_upload.read())
-            
-            # Display the temporary file path (you can remove this later)
-            st.write(f"Temporary file path: {tfile.name}")
 
             # Pass the temporary file path to your function
             st.session_state.input_audio = tfile.name   
