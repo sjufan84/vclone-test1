@@ -23,3 +23,7 @@ onnxruntime
 pyngrok==4.1.12
 torch==2.0.1
 streamlit==1.27.0
+audio-recorder-streamlit
+requests 
+tempfile
+soundfile
