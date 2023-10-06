@@ -26,3 +26,4 @@ streamlit==1.27.0
 audio-recorder-streamlit
 requests 
 soundfile
+bark

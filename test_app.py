@@ -59,15 +59,6 @@ from utils import load_audio, CSVutil
 
 i18n = I18nAuto()
 
-
-# Create session state
-# Define a function to reset the other pages to their default state
-#def reset_pages():
-#    st.session_state.cocktail_page = 'get_cocktail_info'
-#    st.session_state.inventory_page = 'upload_inventory'
-#    st.session_state.menu_page = 'upload_menus'
-#reset_pages()
-
 def init_chat_session_variables():
     """ Initialize the session state """
     session_vars = [
@@ -144,7 +135,7 @@ def get_fshift_presets():
     else:
         return ''
 
-def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_refresh_button):
+def formant_enabled(cbox, qfrency, tmbre):
     
     if (cbox):
 
