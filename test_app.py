@@ -74,6 +74,7 @@ except (ValueError, TypeError, IndexError):
     DoFormant, Quefrency, Timbre = False, 1.0, 1.0
     CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, Quefrency, Timbre)
 
+@st.cache_resource(ttl=3600)
 def download_models():
     # Download hubert base model if not present
     if not os.path.isfile('./hubert_base.pt'):
@@ -385,7 +386,6 @@ options=name_choices)
 index_path = get_index_path(sid0)
 model_path = get_model_path(sid0)
 get_vc(sid0)
-          
 audio_container = st.container()
 audio = None
 input_audio=None
