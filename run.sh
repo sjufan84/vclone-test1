@@ -1,6 +1,6 @@
 # Install Debian packages
-#sudo apt-get update
-#sudo apt-get install -qq -y build-essential ffmpeg aria2
+sudo apt-get update
+sudo apt-get install -qq -y build-essential ffmpeg aria2
 
 # Upgrade pip and setuptools
 pip install --upgrade pip
