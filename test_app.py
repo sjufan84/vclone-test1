@@ -64,9 +64,8 @@ index_path=None
 # Establish the titlea
 st.markdown("##### :violet[Test it out for yourself]")
 
-global DoFormant, Quefrency, Timbre
-
 try:
+    global DoFormant, Quefrency, Timbre
     DoFormant, Quefrency, Timbre = CSVutil('csvdb/formanting.csv', 'r', 'formanting')
     DoFormant = (
         lambda DoFormant: True if DoFormant.lower() == 'true' else (False if DoFormant.lower() == 'false' else DoFormant)
@@ -86,17 +85,6 @@ def download_models():
             print("Downloaded hubert base model file successfully. File saved to ./hubert_base.pt.")
         else:
             raise Exception("Failed to download hubert base model file. Status code: " + str(response.status_code) + ".")
-        
-    # Download rmvpe model if not present
-    if not os.path.isfile('./rmvpe.pt'):
-        response = requests.get('https://drive.usercontent.google.com/download?id=1Hkn4kNuVFRCNQwyxQFRtmzmMBGpQxptI&export=download&authuser=0&confirm=t&uuid=0b3a40de-465b-4c65-8c41-135b0b45c3f7&at=APZUnTV3lA3LnyTbeuduura6Dmi2:1693724254058')
-
-        if response.status_code == 200:
-            with open('./rmvpe.pt', 'wb') as f:
-                f.write(response.content)
-            print("Downloaded rmvpe model file successfully. File saved to ./rmvpe.pt.")
-        else:
-            raise Exception("Failed to download rmvpe model file. Status code: " + str(response.status_code) + ".")
 
 download_models()
 
@@ -416,45 +404,7 @@ if audio_upload:
     input_audio = tfile.name   
     audio, sr = librosa.load(tfile.name)
     audio_files.append({tfile.name: audio})
-#with col2:
-#    st.text("")
-    #st.markdown("""
-    #<p style="text-align:center; margin-right=20px;"><b>Record Audio</b></p>
-    #""", unsafe_allow_html=True)
-    #col4, col5 = st.columns(2)
-    #with col4:
-    #    st.markdown(":green[Stopped] / \
-    #                :red[Recording]")
-    #with col5:
-        #recorded_audio_bytes = audio_recorder(text="", icon_name="record-vinyl",
-        #sample_rate=16000, neutral_color = "green", icon_size="3x")
-    #st.text("")
-    #st.text("")
-    #st.text("")
-    #if recorded_audio_bytes:
-    #    st.markdown("""
-    #                <p style="color:#EDC480; font-size: 23px; text-align: center;">
-    #                Recorded audio clip:
-    #                </p>
-    #                """, unsafe_allow_html=True)
-    #    st.audio(recorded_audio_bytes)
-    #    recorded_audio = librosa.load(io.BytesIO(recorded_audio_bytes))
-        # Using soundfile to read the audio file into a NumPy array
-    #    st.session_state.audio_bytes_list.append(recorded_audio)
-    # Put the audio recorder here    
-    #record_button=gr.Audio(source="microphone", label="OR Record audio.", type="filepath")
-    #record_audio = None
-    #dropbox.upload(fn=save_to_wav2, inputs=[dropbox], outputs=[input_audio0])
-    #dropbox.upload(fn=change_choices2, inputs=[], outputs=[input_audio0])
-    #refresh_button2 = gr.Button("Refresh", type="primary", size='sm')
-    #record_button.change(fn=save_to_wav, inputs=[record_button], outputs=[input_audio0])
-    #record_button.change(fn=change_choices2, inputs=[], outputs=[input_audio0])
 
-    #if st.session_state.audio_files != []:
-    #    selected_input_audio = st.selectbox("Select audio to convert",
-    #    options=[file[0] for file in st.session_state.audio_files])
-    #    with open(selected_input_audio, 'rb') as f:
-    #        audio_input = f.read().decode("utf-8")
 st.markdown("**Below you can play around with diferent settings.\
     It is a good idea to change the pitch and clone first to establish\
     a baseline and then adjust the others.  Note that some of the features\
@@ -462,22 +412,6 @@ st.markdown("**Below you can play around with diferent settings.\
 st.text("")
 col1, col2 = st.columns(2, gap="medium")
 with col1:
-    # Index should be hard coded based on the selected model
-    #st.markdown(":blue[Index file associated with the model:]")
-    #st.markdown(f"**{st.session_state.index_path}**")
-    #vc_output2 = st.audio(
-    #    label="Output Audio (Click on the Three Dots in the Right Corner to Download)",
-    #    type='filepath',
-    #)
-    # For now, the pitch extraction will be hardcoded to be "harvest"
-    #f0method=st.radio(label="Optional: Change the Pitch Extraction Algorithm.\
-    #        Extraction methods are sorted from 'worst quality' to\
-    #        'best quality'. mangio-crepe may or may not be better\
-    #        than rmvpe in cases where 'smoothness' is more important,\
-    #        but rmvpe is the best overall.",
-    #options=["pm", "dio", "crepe-tiny", "mangio-crepe-tiny", "crepe", "harvest", "mangio-crepe", "rmvpe"], # Fork Feature. Add Crepe-Tiny
-    #index=5
-#)
     # Adjust the pitch if you want
     pitch_adjustments = st.slider("Pitch Adjustment -- If going from male to female\
                                 go lower, if female to male higher.", min_value=-12,
@@ -515,12 +449,6 @@ with col1:
     #step=1,
     #)
 with col2:
-    #rms_mix_rate0 = st.slider(
-    #    min_value=0.00,
-    #    max_value=1.00,
-    #    label=i18n("输入源音量包络替换输出音量包络融合比例，越靠近1越使用输出包络"),
-    #    value=0.21,
-    #    )
     # Allow the user to select the index_rate
     index_rate = st.slider("Index Rate -- Affects how closely\
     the model matches certain vocal characteristics", min_value=0.00, max_value=1.00, value=0.67, step=0.01)
@@ -528,40 +456,13 @@ with col2:
         try:
             st.markdown("**Original Audio Clip:**")
             st.audio(audio, sample_rate=sr)
-        except:
+        except TypeError as e:
             time.sleep(3)
             st.markdown("**Original Audio Clip:**")
             st.audio(audio, sample_rate=sr)
         finally:
             pass
-    
-    #formanting = st.checkbox(
-    #    value=bool(DoFormant),
-    #    label="[EXPERIMENTAL] Formant shift inference audio"            )
-    #if formanting:
-    #    qfrency = st.slider(
-    #        value=8.0,
-    #        label="Quefrency for formant shifting",
-    #        min_value=0.0,
-    #        max_value=16.0,
-    #        step=0.1,
-    #        )
-    #    tmbre = st.slider(
-    #        value=8.0,
-    #        label="Timbre for formant shifting",
-    #        min_value=0.0,
-    #        max_value=16.0,
-    #        step=0.1,
-    #    )
-    #formant_preset.change(fn=preset_apply, inputs=[formant_preset, qfrency, tmbre], outputs=[qfrency, tmbre])
-    #frmntbut = st.button("Apply", type="primary", visible=bool(DoFormant))
-    #if frmntbut:
-    #    formanting.change(fn=formant_enabled,inputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button],outputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button])
-    #frmntbut.onclick(fn=formant_apply,inputs=[qfrency, tmbre], outputs=[qfrency, tmbre])
-    #formant_refresh_button.click(fn=update_fshift_presets,inputs=[formant_preset, qfrency, tmbre],outputs=[formant_preset, qfrency, tmbre])
-    
-    #vc_output1 = gr.Textbox("")
-    #f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"), visible=False)
+   
     output_audio=None
     convert_button = st.button("Convert Audio", type='primary', use_container_width=True)
     if convert_button:
