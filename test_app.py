@@ -24,6 +24,7 @@
 import traceback
 import requests
 import tempfile
+import time
 import numpy as np
 import librosa
 import io
@@ -542,8 +543,15 @@ def main_ui():
             index_rate = st.slider("Index Rate -- Affects how closely\
             the model matches certain vocal characteristics", min_value=0.00, max_value=1.00, value=0.67, step=0.01)
             if st.session_state.input_audio is not None:
-                st.markdown("**Original Audio Clip:**")
-                st.audio(audio, sample_rate=sr)
+                try:
+                    st.markdown("**Original Audio Clip:**")
+                    st.audio(audio, sample_rate=sr)
+                except:
+                    time.sleep(3)
+                    st.markdown("**Original Audio Clip:**")
+                    st.audio(audio, sample_rate=sr)
+                finally:
+                    pass
             
             #formanting = st.checkbox(
             #    value=bool(DoFormant),
