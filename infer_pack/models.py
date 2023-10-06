@@ -7,6 +7,9 @@ from infer_pack.commons import init_weights, get_padding
 from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 import numpy as np
+import infer_pack.attentions as attentions
+import infer_pack.modules as modules
+import infer_pack.commons as commons
 
 
 class TextEncoder256(nn.Module):
