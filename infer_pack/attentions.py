@@ -5,8 +5,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-import commons
-from modules import LayerNorm
+import infer_pack.commons as commons
+from infer_pack.modules import LayerNorm
 
 class Encoder(nn.Module):
     def __init__(
