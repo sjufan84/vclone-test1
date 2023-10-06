@@ -419,6 +419,7 @@ def main_ui():
               
     audio_container = st.container()
     audio = None
+    sr=None
     with audio_container:
         #col1, col2 = st.columns([2,1], gap="medium")
         #with col1:
