@@ -20,6 +20,7 @@
     # async function to return the similarity scores, numpys (for charting)
     # and cloned audio   
 
+
 import traceback
 import requests
 import tempfile
@@ -42,12 +43,6 @@ os.makedirs(os.path.join(now_dir, "weights"), exist_ok=True)
 os.environ["TEMP"] = tmp
 warnings.filterwarnings("ignore")
 torch.manual_seed(114514)
-from lib.infer_pack.models import (
-    SynthesizerTrnMs256NSFsid,
-    SynthesizerTrnMs256NSFsid_nono,
-    SynthesizerTrnMs768NSFsid,
-    SynthesizerTrnMs768NSFsid_nono,
-)
 import soundfile as sf
 from fairseq import checkpoint_utils
 import gradio as gr
@@ -56,7 +51,12 @@ from vc_infer_pipeline import VC
 from config import Config
 from i18n import I18nAuto
 from utils import load_audio, CSVutil
-
+from infer_pack.models import (
+    SynthesizerTrnMs256NSFsid,
+    SynthesizerTrnMs256NSFsid_nono,
+    SynthesizerTrnMs768NSFsid,
+    SynthesizerTrnMs768NSFsid_nono,
+)
 i18n = I18nAuto()
 
 def init_chat_session_variables():
