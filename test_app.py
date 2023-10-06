@@ -76,7 +76,7 @@ def init_chat_session_variables():
 init_chat_session_variables()
 
 # Establish the titlea
-st.title("Vocal Cloning v1")
+st.markdown("##### :violet[Test it out for yourself]")
 
 global DoFormant, Quefrency, Timbre
 
@@ -402,20 +402,13 @@ name_choices = ["Joel", "Jenny"]
 def main_ui():
     """ The main UI page structure """
     st.markdown("""
-    Below we feature the ability to generate a clone of your voice based\
-    on the models we trained using Jenny and Joel's voices.  There are several\
-    different options to play around with, some of which are experimental,\
-    but first start with adjusting pitch if necessary and then running the model\
-    to get a baseline result.  Remember, we used *less than 10 minutes* of vocal\
-    stems from Joel and Jenny to train their models.  One can imagine the quality\
-    you can generate with longer training runs.
+    Curious to know what something you sing would sound like\
+    with either Joel or Jenny's voice?  Upload an audio clip\
+    of you or someone else (with their permission of course)\
+    to test it out.  You can then adjust the pitch and other\
+    settings.
     """)
-    st.markdown("""**You can either upload a clip of your\
-    vocals or record a clip to be converted.  Currently we only have it set up to\
-    copy one clip, but it is possible to convert by the batch, thus creating the\
-    ability to combine shorter clips into one long one which could even be an entire\
-    song.**
-    """)
+    
     st.text("")
     sid0 = st.selectbox(label="Choose which artist you would like to clone.",
     options=st.session_state.name_choices)
@@ -482,6 +475,7 @@ def main_ui():
             It is a good idea to change the pitch and clone first to establish\
             a baseline and then adjust the others.  Note that some of the features\
             are experimental, so may not work as expected in certain cases.**")
+        st.text("")
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             # Index should be hard coded based on the selected model
