@@ -21,7 +21,6 @@
     # and cloned audio   
 
 
-
 import traceback
 import requests
 import tempfile
@@ -29,7 +28,7 @@ import time
 import numpy as np
 import librosa
 import io
-from audio_recorder_streamlit import audio_recorder
+#from audio_recorder_streamlit import audio_recorder
 import streamlit as st
 import torch, os, sys, warnings, shutil
 import datetime
@@ -60,29 +59,13 @@ from infer_pack.models import (
     SynthesizerTrnMs768NSFsid_nono,
 )
 i18n = I18nAuto()
-
-def init_chat_session_variables():
-    """ Initialize the session state """
-    session_vars = [
-        'model', 'index_path', 'model_path', 'sid0', 'name_choices', "spk_item", "audio_files", 
-        'pitch_adjustments', 'output_audio', 'input_audio'
-    ]
-    default_values = [
-        None, None, None, '', ["Joel", "Jenny"], 0, [], 0, None, None
-    ]
-
-    for var, default_value in zip(session_vars, default_values):
-        if var not in st.session_state:
-            st.session_state[var] = default_value
-
-init_chat_session_variables()
+index_path=None
 
 # Establish the titlea
 st.markdown("##### :violet[Test it out for yourself]")
 
-global DoFormant, Quefrency, Timbre
-
 try:
+    global DoFormant, Quefrency, Timbre
     DoFormant, Quefrency, Timbre = CSVutil('csvdb/formanting.csv', 'r', 'formanting')
     DoFormant = (
         lambda DoFormant: True if DoFormant.lower() == 'true' else (False if DoFormant.lower() == 'false' else DoFormant)
@@ -91,6 +74,7 @@ except (ValueError, TypeError, IndexError):
     DoFormant, Quefrency, Timbre = False, 1.0, 1.0
     CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, Quefrency, Timbre)
 
+@st.cache_resource(ttl=3600)
 def download_models():
     # Download hubert base model if not present
     if not os.path.isfile('./hubert_base.pt'):
@@ -102,20 +86,8 @@ def download_models():
             print("Downloaded hubert base model file successfully. File saved to ./hubert_base.pt.")
         else:
             raise Exception("Failed to download hubert base model file. Status code: " + str(response.status_code) + ".")
-        
-    # Download rmvpe model if not present
-    if not os.path.isfile('./rmvpe.pt'):
-        response = requests.get('https://drive.usercontent.google.com/download?id=1Hkn4kNuVFRCNQwyxQFRtmzmMBGpQxptI&export=download&authuser=0&confirm=t&uuid=0b3a40de-465b-4c65-8c41-135b0b45c3f7&at=APZUnTV3lA3LnyTbeuduura6Dmi2:1693724254058')
-
-        if response.status_code == 200:
-            with open('./rmvpe.pt', 'wb') as f:
-                f.write(response.content)
-            print("Downloaded rmvpe model file successfully. File saved to ./rmvpe.pt.")
-        else:
-            raise Exception("Failed to download rmvpe model file. Status code: " + str(response.status_code) + ".")
 
 download_models()
-
 
 def formant_apply(qfrency, tmbre):
     Quefrency = qfrency
@@ -170,8 +142,6 @@ def formant_enabled(cbox, qfrency, tmbre):
             {"visible": False, "__type__": "update"},
         )
         
-
-
 def preset_apply(preset, qfer, tmbr):
     if str(preset) != '':
         with open(str(preset), 'r') as p:
@@ -216,7 +186,6 @@ def get_model_path(sid):
         model_path = "./weights/jenny3450.pth"
     else:
         model_path = ""
-    st.session_state.model_path = model_path
     return model_path
 
 def save_to_wav(record_button):
@@ -361,8 +330,8 @@ def vc_single(sid,
         if resample_sr >= 16000 and tgt_sr != resample_sr:
             tgt_sr = resample_sr
         index_info = (
-            "Using index:%s." % st.session_state.index_path
-            if st.session_state.index_path is not None
+            "Using index:%s." % index_path
+            if index_path is not None
             else "Index not used."
         )
         return "Success.\n %s\nTime:\n npy:%ss, f0:%ss, infer:%ss" % (
@@ -399,208 +368,119 @@ def load_hubert():
 
 weight_root = "weights"
 index_root = "logs"
+
+
+st.markdown("""
+Curious to know what something you sing would sound like\
+with either Joel or Jenny's voice?  Upload an audio clip\
+of you or someone else (with their permission of course)\
+to test it out.  You can then adjust the pitch and other\
+settings.
+""")
+
+st.text("")
 name_choices = ["Joel", "Jenny"]
+model_path=None
+sid0 = st.selectbox(label="Choose which artist you would like to clone.",
+options=name_choices)
+index_path = get_index_path(sid0)
+model_path = get_model_path(sid0)
+get_vc(sid0)
+audio_container = st.container()
+audio = None
+input_audio=None
+audio_files=[]
+sr=None
+#col1, col2 = st.columns([2,1], gap="medium")
+#with col1:
+audio_upload = st.file_uploader(label="Upload an audio clip here.  Make sure the clip is\
+only vocals and as clean as possible.", type=["wav", "mp3"])
+if audio_upload:
+    # Create a temporary file to save the uploaded file
+    tfile = tempfile.NamedTemporaryFile(delete=False) 
+    tfile.write(audio_upload.read())
 
-def main_ui():
-    """ The main UI page structure """
-    st.markdown("""
-    Curious to know what something you sing would sound like\
-    with either Joel or Jenny's voice?  Upload an audio clip\
-    of you or someone else (with their permission of course)\
-    to test it out.  You can then adjust the pitch and other\
-    settings.
-    """)
+    # Pass the temporary file path to your function
+    input_audio = tfile.name   
+    audio, sr = librosa.load(tfile.name)
+    audio_files.append({tfile.name: audio})
+
+st.markdown("**Below you can play around with diferent settings.\
+    It is a good idea to change the pitch and clone first to establish\
+    a baseline and then adjust the others.  Note that some of the features\
+    are experimental, so may not work as expected in certain cases.**")
+st.text("")
+col1, col2 = st.columns(2, gap="medium")
+with col1:
+    # Adjust the pitch if you want
+    pitch_adjustments = st.slider("Pitch Adjustment -- If going from male to female\
+                                go lower, if female to male higher.", min_value=-12,
+                                max_value=12, step=1, value=0)
     
-    st.text("")
-    sid0 = st.selectbox(label="Choose which artist you would like to clone.",
-    options=st.session_state.name_choices)
-    st.session_state.index_path = get_index_path(sid0)
-    st.session_state.model_path = get_model_path(sid0)
-    get_vc(sid0)
-              
-    audio_container = st.container()
-    audio = None
-    sr=None
-    with audio_container:
-        #col1, col2 = st.columns([2,1], gap="medium")
-        #with col1:
-        audio_upload = st.file_uploader(label="Upload an audio clip here.  Make sure the clip is\
-        only vocals and as clean as possible.", type=["wav", "mp3"])
-        if audio_upload:
-            # Create a temporary file to save the uploaded file
-            tfile = tempfile.NamedTemporaryFile(delete=False) 
-            tfile.write(audio_upload.read())
-
-            # Pass the temporary file path to your function
-            st.session_state.input_audio = tfile.name   
-            audio, sr = librosa.load(tfile.name)
-            st.session_state.audio_files.append({tfile.name: audio})
-        #with col2:
-        #    st.text("")
-            #st.markdown("""
-            #<p style="text-align:center; margin-right=20px;"><b>Record Audio</b></p>
-            #""", unsafe_allow_html=True)
-            #col4, col5 = st.columns(2)
-            #with col4:
-            #    st.markdown(":green[Stopped] / \
-            #                :red[Recording]")
-            #with col5:
-                #recorded_audio_bytes = audio_recorder(text="", icon_name="record-vinyl",
-                #sample_rate=16000, neutral_color = "green", icon_size="3x")
-            #st.text("")
-            #st.text("")
-            #st.text("")
-            #if recorded_audio_bytes:
-            #    st.markdown("""
-            #                <p style="color:#EDC480; font-size: 23px; text-align: center;">
-            #                Recorded audio clip:
-            #                </p>
-            #                """, unsafe_allow_html=True)
-            #    st.audio(recorded_audio_bytes)
-            #    recorded_audio = librosa.load(io.BytesIO(recorded_audio_bytes))
-                # Using soundfile to read the audio file into a NumPy array
-            #    st.session_state.audio_bytes_list.append(recorded_audio)
-            # Put the audio recorder here    
-            #record_button=gr.Audio(source="microphone", label="OR Record audio.", type="filepath")
-            #record_audio = None
-            #dropbox.upload(fn=save_to_wav2, inputs=[dropbox], outputs=[input_audio0])
-            #dropbox.upload(fn=change_choices2, inputs=[], outputs=[input_audio0])
-            #refresh_button2 = gr.Button("Refresh", type="primary", size='sm')
-            #record_button.change(fn=save_to_wav, inputs=[record_button], outputs=[input_audio0])
-            #record_button.change(fn=change_choices2, inputs=[], outputs=[input_audio0])
-        
-            #if st.session_state.audio_files != []:
-            #    selected_input_audio = st.selectbox("Select audio to convert",
-            #    options=[file[0] for file in st.session_state.audio_files])
-            #    with open(selected_input_audio, 'rb') as f:
-            #        audio_input = f.read().decode("utf-8")
-        st.markdown("**Below you can play around with diferent settings.\
-            It is a good idea to change the pitch and clone first to establish\
-            a baseline and then adjust the others.  Note that some of the features\
-            are experimental, so may not work as expected in certain cases.**")
-        st.text("")
-        col1, col2 = st.columns(2, gap="medium")
-        with col1:
-            # Index should be hard coded based on the selected model
-            #st.markdown(":blue[Index file associated with the model:]")
-            #st.markdown(f"**{st.session_state.index_path}**")
-            #vc_output2 = st.audio(
-            #    label="Output Audio (Click on the Three Dots in the Right Corner to Download)",
-            #    type='filepath',
-            #)
-            # For now, the pitch extraction will be hardcoded to be "harvest"
-            #f0method=st.radio(label="Optional: Change the Pitch Extraction Algorithm.\
-            #        Extraction methods are sorted from 'worst quality' to\
-            #        'best quality'. mangio-crepe may or may not be better\
-            #        than rmvpe in cases where 'smoothness' is more important,\
-            #        but rmvpe is the best overall.",
-            #options=["pm", "dio", "crepe-tiny", "mangio-crepe-tiny", "crepe", "harvest", "mangio-crepe", "rmvpe"], # Fork Feature. Add Crepe-Tiny
-            #index=5
-        #)
-            # Adjust the pitch if you want
-            pitch_adjustments = st.slider("Pitch Adjustment -- If going from male to female\
-                                        go lower, if female to male higher.", min_value=-12,
-                                        max_value=12, step=1, value=0)
-            st.session_state.pitch_adjustments = pitch_adjustments
-            
-            # Allow the user to select the resample rate
-            resample_sr0 = st.slider(
-                min_value=0,
-                max_value=48000,
-                label=i18n("后处理重采样至最终采样率，0为不进行重采样"),
-                value=0,
-                step=1000,
-                )
-            protect0 = st.slider(
-                min_value=0.00,
-                max_value=0.50,
-                label=i18n("保护清辅音和呼吸声，防止电音撕裂等artifact，拉满0.5不开启，调低加大保护力度但可能降低索引效果"),
-                value=0.33,
-                step=0.01,
-                )
-            #crepe_hop_length = st.slider(
-            #    min_value=1,
-            #    max_value=512,
-            #    step=1,
-            #    label="Mangio-Crepe Hop Length. Higher numbers will\
-            #        reduce the chance of extreme\
-            #        pitch changes but lower numbers will increase accuracy. 64-192 is a good range to experiment with.",
-            #    value=120,
-            #    )
-            #filter_radius0 = st.slider(
-            #min_value=0,
-            #max_value=7,
-            #label=i18n(">=3则使用对harvest音高识别的结果使用中值滤波，数值为滤波半径，使用可以削弱哑音"),
-            #value=3,
-            #step=1,
-            #)
-        with col2:
-            #rms_mix_rate0 = st.slider(
-            #    min_value=0.00,
-            #    max_value=1.00,
-            #    label=i18n("输入源音量包络替换输出音量包络融合比例，越靠近1越使用输出包络"),
-            #    value=0.21,
-            #    )
-            # Allow the user to select the index_rate
-            index_rate = st.slider("Index Rate -- Affects how closely\
-            the model matches certain vocal characteristics", min_value=0.00, max_value=1.00, value=0.67, step=0.01)
-            if st.session_state.input_audio is not None:
-                try:
-                    st.markdown("**Original Audio Clip:**")
-                    st.audio(audio, sample_rate=sr)
-                except:
-                    time.sleep(3)
-                    st.markdown("**Original Audio Clip:**")
-                    st.audio(audio, sample_rate=sr)
-                finally:
-                    pass
-            
-            #formanting = st.checkbox(
-            #    value=bool(DoFormant),
-            #    label="[EXPERIMENTAL] Formant shift inference audio"            )
-            #if formanting:
-            #    qfrency = st.slider(
-            #        value=8.0,
-            #        label="Quefrency for formant shifting",
-            #        min_value=0.0,
-            #        max_value=16.0,
-            #        step=0.1,
-            #        )
-            #    tmbre = st.slider(
-            #        value=8.0,
-            #        label="Timbre for formant shifting",
-            #        min_value=0.0,
-            #        max_value=16.0,
-            #        step=0.1,
-            #    )
-            #formant_preset.change(fn=preset_apply, inputs=[formant_preset, qfrency, tmbre], outputs=[qfrency, tmbre])
-            #frmntbut = st.button("Apply", type="primary", visible=bool(DoFormant))
-            #if frmntbut:
-            #    formanting.change(fn=formant_enabled,inputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button],outputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button])
-            #frmntbut.onclick(fn=formant_apply,inputs=[qfrency, tmbre], outputs=[qfrency, tmbre])
-            #formant_refresh_button.click(fn=update_fshift_presets,inputs=[formant_preset, qfrency, tmbre],outputs=[formant_preset, qfrency, tmbre])
-            
-            #vc_output1 = gr.Textbox("")
-            #f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"), visible=False)
-            
-            convert_button = st.button("Convert Audio", type='primary', use_container_width=True)
-            if convert_button:
-                if st.session_state.input_audio is None:
-                    st.warning("You need to upload an audio file first.")
-                with st.spinner("Converting audio..."):
-                    st.session_state.output_audio = vc_single(
-                        0,
-                        f0_method="harvest",
-                        input_audio_path=st.session_state.input_audio,
-                        file_index=st.session_state.index_path,
-                        # file_index2,
-                        # file_big_npy1,
-                        f0_up_key=pitch_adjustments,
-                        index_rate=index_rate,
-                        resample_sr=resample_sr0,
-                        protect=protect0,
-                    )
-            if st.session_state.output_audio is not None:
-                st.markdown("**Converted Audio Clip:**")
-                st.audio(st.session_state.output_audio[1][1], sample_rate=st.session_state.output_audio[1][0])
-main_ui()
+    # Allow the user to select the resample rate
+    resample_sr0 = st.slider(
+        min_value=0,
+        max_value=48000,
+        label=i18n("后处理重采样至最终采样率，0为不进行重采样"),
+        value=0,
+        step=1000,
+        )
+    protect0 = st.slider(
+        min_value=0.00,
+        max_value=0.50,
+        label=i18n("保护清辅音和呼吸声，防止电音撕裂等artifact，拉满0.5不开启，调低加大保护力度但可能降低索引效果"),
+        value=0.33,
+        step=0.01,
+        )
+    #crepe_hop_length = st.slider(
+    #    min_value=1,
+    #    max_value=512,
+    #    step=1,
+    #    label="Mangio-Crepe Hop Length. Higher numbers will\
+    #        reduce the chance of extreme\
+    #        pitch changes but lower numbers will increase accuracy. 64-192 is a good range to experiment with.",
+    #    value=120,
+    #    )
+    #filter_radius0 = st.slider(
+    #min_value=0,
+    #max_value=7,
+    #label=i18n(">=3则使用对harvest音高识别的结果使用中值滤波，数值为滤波半径，使用可以削弱哑音"),
+    #value=3,
+    #step=1,
+    #)
+with col2:
+    # Allow the user to select the index_rate
+    index_rate = st.slider("Index Rate -- Affects how closely\
+    the model matches certain vocal characteristics", min_value=0.00, max_value=1.00, value=0.67, step=0.01)
+    if input_audio is not None:
+        try:
+            st.markdown("**Original Audio Clip:**")
+            st.audio(audio, sample_rate=sr)
+        except TypeError as e:
+            time.sleep(3)
+            st.markdown("**Original Audio Clip:**")
+            st.audio(audio, sample_rate=sr)
+        finally:
+            pass
+   
+    output_audio=None
+    convert_button = st.button("Convert Audio", type='primary', use_container_width=True)
+    if convert_button:
+        if input_audio is None:
+            st.warning("You need to upload an audio file first.")
+        with st.spinner("Converting audio..."):
+            output_audio = vc_single(
+                0,
+                f0_method="harvest",
+                input_audio_path=input_audio,
+                file_index=index_path,
+                # file_index2,
+                # file_big_npy1,
+                f0_up_key=pitch_adjustments,
+                index_rate=index_rate,
+                resample_sr=resample_sr0,
+                protect=protect0,
+            )
+    if output_audio is not None:
+        st.markdown("**Converted Audio Clip:**")
+        st.audio(output_audio[1][1], sample_rate=output_audio[1][0])
